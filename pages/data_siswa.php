@@ -1,13 +1,18 @@
 <?php 
 require '../includes/session.php'; 
 require '../includes/db.php'; 
+
+// Pencarian siswa
+$search = $_GET['search_siswa'] ?? '';
+$query = "SELECT * FROM users WHERE role='siswa' AND nama LIKE '%$search%'";
+$result = mysqli_query($conn, $query);
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard</title>
+    <title>Data Siswa</title>
     <style>
         body {
             margin: 0;
@@ -85,7 +90,6 @@ require '../includes/db.php';
             background-color: #E0F7FA;
             min-height: 100vh;
             transition: margin-left 0.3s ease;
-            text-align: center;
         }
 
         .content.full {
@@ -95,65 +99,19 @@ require '../includes/db.php';
         h1 {
             color: #01579B;
             font-size: 28px;
-            margin-bottom: 10px;
-        }
-
-        h2 {
-            color: #0277BD;
-            font-size: 22px;
+            text-align: center;
             margin-bottom: 20px;
         }
 
-        .stats-container {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .stat-box {
-            background-color: #0288D1; /* Warna biru laut */
-            color: white;
-            padding: 20px;
-            border-radius: 10px;
-            text-align: center;
-            flex: 1 1 calc(33.333% - 20px); /* Responsif: 3 kolom */
-            max-width: 300px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .stat-box:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.2);
-        }
-
-        .stat-box h3 {
-            margin: 0;
-            font-size: 20px;
-        }
-
-        .stat-box p {
-            margin: 10px 0 0;
-            font-size: 26px;
-            font-weight: bold;
-        }
-
         .search-container {
-            margin-top: 30px;
+            text-align: center;
+            margin-bottom: 20px;
         }
 
         .search-bar {
             display: inline-flex;
             align-items: center;
-            margin-bottom: 20px;
             gap: 10px;
-        }
-
-        .search-bar label {
-            font-size: 16px;
-            color: #01579B;
         }
 
         .search-bar input {
@@ -161,11 +119,10 @@ require '../includes/db.php';
             padding: 10px;
             border: 1px solid #ccc;
             border-radius: 5px;
-            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         .search-bar button {
-            background-color: #0288D1; /* Warna tombol biru */
+            background-color: #0288D1;
             color: white;
             border: none;
             padding: 10px 15px;
@@ -175,7 +132,67 @@ require '../includes/db.php';
         }
 
         .search-bar button:hover {
-            background-color: #03A9F4; /* Warna hover lebih terang */
+            background-color: #03A9F4;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: white;
+        }
+
+        table th {
+            background-color: #0288D1; /* Warna biru laut */
+            color: white;
+            padding: 10px;
+        }
+
+        table td {
+            padding: 10px;
+            text-align: center;
+        }
+
+        table tr:nth-child(even) {
+            background-color: #E1F5FE; /* Warna biru muda */
+        }
+
+        .action-buttons a {
+            text-decoration: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            color: white;
+            margin: 0 5px;
+        }
+
+        .action-buttons .edit {
+            background-color: #00A9FF;
+        }
+
+        .action-buttons .delete {
+            background-color: #FF6B6B;
+        }
+
+        .action-buttons .riwayat {
+            background-color: #32CD32;
+        }
+
+        .action-buttons a:hover {
+            opacity: 0.8;
+        }
+
+        .add-button {
+            display: inline-block;
+            background-color: #0288D1;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            text-decoration: none;
+            margin-top: 20px;
+        }
+
+        .add-button:hover {
+            background-color: #03A9F4;
         }
 
         @media (max-width: 768px) {
@@ -200,6 +217,7 @@ require '../includes/db.php';
 <div class="sidebar hidden">
     <h3>Menu</h3>
     <ul>
+        <li><a href="dashboard.php">Dashboard</a></li>
         <li><a href="data_buku.php">Data Buku</a></li>
         <li><a href="data_siswa.php">Data Siswa</a></li>
         <li><a href="data_peminjam.php">Data Peminjam</a></li>
@@ -209,41 +227,41 @@ require '../includes/db.php';
 </div>
 
 <div class="content full">
-    <h1>Selamat Datang di Perpustakaan</h1>
-    <p>Temukan buku dan informasi siswa di sini.</p>
-
-    <h2>Statistik Perpustakaan</h2>
-    <div class="stats-container">
-        <div class="stat-box">
-            <h3>Total Buku</h3>
-            <p><?= mysqli_num_rows(mysqli_query($conn, "SELECT * FROM buku")); ?></p>
-        </div>
-        <div class="stat-box">
-            <h3>Total Peminjaman</h3>
-            <p><?= mysqli_num_rows(mysqli_query($conn, "SELECT * FROM peminjam")); ?></p>
-        </div>
-        <div class="stat-box">
-            <h3>Total Siswa</h3>
-            <p><?= mysqli_num_rows(mysqli_query($conn, "SELECT * FROM users WHERE role='siswa'")); ?></p>
-        </div>
-    </div>
+    <h1>Data Siswa</h1>
 
     <div class="search-container">
-        <div class="search-bar">
-            <label for="search-buku">Cari Buku</label>
-            <form method="GET" action="data_buku.php" style="display: inline;">
-                <input type="text" id="search-buku" name="search_buku" placeholder="Masukkan judul atau pengarang buku">
-                <button type="submit">Cari</button>
-            </form>
-        </div>
-        <div class="search-bar">
-            <label for="search-siswa">Cari Siswa</label>
-            <form method="GET" action="data_siswa.php" style="display: inline;">
-                <input type="text" id="search-siswa" name="search_siswa" placeholder="Masukkan nama siswa">
-                <button type="submit">Cari</button>
-            </form>
-        </div>
+        <form method="GET" class="search-bar">
+            <input type="text" name="search_siswa" placeholder="Cari siswa..." value="<?= htmlspecialchars($search) ?>">
+            <button type="submit">Cari</button>
+        </form>
     </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nama</th>
+                <th>Username</th>
+                <th>Aksi</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php while ($row = mysqli_fetch_assoc($result)): ?>
+                <tr>
+                    <td><?= $row['id'] ?></td>
+                    <td><?= htmlspecialchars($row['nama']) ?></td>
+                    <td><?= htmlspecialchars($row['username']) ?></td>
+                    <td class="action-buttons">
+                        <a href="edit_siswa.php?id=<?= $row['id'] ?>" class="edit">Edit</a>
+                        <a href="hapus_siswa.php?id=<?= $row['id'] ?>" class="delete" onclick="return confirm('Yakin ingin menghapus siswa ini?')">Hapus</a>
+                        <a href="riwayat_siswa.php?id=<?= $row['id'] ?>" class="riwayat">Riwayat</a>
+                    </td>
+                </tr>
+            <?php endwhile; ?>
+        </tbody>
+    </table>
+
+    <a href="tambah_siswa.php" class="add-button">Tambah Siswa</a>
 </div>
 
 <script>
