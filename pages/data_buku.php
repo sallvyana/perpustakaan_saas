@@ -6,8 +6,33 @@ require '../includes/db.php';
 if (isset($_GET['hapus']) && $_SESSION['role'] == 'admin') {
     $id = (int) $_GET['hapus'];
     mysqli_query($conn, "DELETE FROM buku WHERE id = $id");
-    header("Location: buku.php");
+    header("Location: data_buku.php");
     exit;
+}
+
+// Proses pinjam buku
+if (isset($_POST['pinjam']) && ($_SESSION['role'] == 'siswa' || $_SESSION['role'] == 'guru')) {
+    $id_buku = intval($_POST['id_buku']);
+    $id_siswa = $_SESSION['id'];
+    $tanggal_pinjam = date('Y-m-d');
+
+    // Ambil data buku
+    $buku_query = mysqli_query($conn, "SELECT * FROM buku WHERE id = $id_buku");
+    $buku = mysqli_fetch_assoc($buku_query);
+
+    if ($buku && $buku['stok'] > 0) {
+        // Kurangi stok buku
+        mysqli_query($conn, "UPDATE buku SET stok = stok - 1 WHERE id = $id_buku");
+
+        // Tambahkan ke data peminjaman
+        mysqli_query($conn, "INSERT INTO peminjam (id_buku, id_siswa, tanggal_pinjam) VALUES ($id_buku, $id_siswa, '$tanggal_pinjam')");
+
+        header("Location: data_buku.php?msg=success");
+        exit;
+    } else {
+        header("Location: data_buku.php?msg=error");
+        exit;
+    }
 }
 
 // Pencarian dan filter
@@ -42,80 +67,62 @@ $no = $mulai + 1;
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Data Buku</title>
     <style>
+        /* General Styles */
         body {
             margin: 0;
             font-family: Arial, sans-serif;
-            background-color: #E0F7FA; /* Latar belakang nuansa pantai */
-        }
-
-        .sidebar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 220px;
-            height: 100%;
-            background-color: #0288D1; /* Warna biru laut */
-            color: white;
-            padding: 20px;
-            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
-        }
-
-        .sidebar h3 {
-            margin: 0 0 20px;
-            font-size: 20px;
-            text-align: center;
-        }
-
-        .sidebar ul {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        .sidebar ul li {
-            margin-bottom: 15px;
-        }
-
-        .sidebar ul li a {
-            color: white;
-            text-decoration: none;
-            font-size: 16px;
-            display: block;
-            padding: 10px;
-            border-radius: 5px;
-            transition: background-color 0.2s;
-        }
-
-        .sidebar ul li a:hover {
-            background-color: #03A9F4; /* Warna hover lebih terang */
-        }
-
-        .content {
-            margin-left: 220px;
-            padding: 20px;
             background-color: #E0F7FA;
-            min-height: 100vh;
         }
 
-        h1 {
-            color: #01579B;
-            font-size: 28px;
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        .search-container {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        .search-bar {
-            display: inline-flex;
+        /* Top Bar Styles */
+        .top-bar {
+            display: flex;
+            flex-direction: column;
             align-items: center;
+            margin-bottom: 20px;
             gap: 10px;
         }
 
-        .search-bar input, .search-bar select {
+        .top-bar h1 {
+            font-size: 28px;
+            color: #01579B;
+            margin: 0;
+            text-align: center;
+        }
+
+        .actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 1200px;
+            gap: 10px;
+        }
+
+        .menu-toggle {
+            background-color: #0288D1;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .menu-toggle:hover {
+            background-color: #03A9F4;
+        }
+
+        .search-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-grow: 1;
+            justify-content: center;
+        }
+
+        .search-bar input,
+        .search-bar select {
             padding: 10px;
             border: 1px solid #ccc;
             border-radius: 5px;
@@ -135,15 +142,30 @@ $no = $mulai + 1;
             background-color: #03A9F4;
         }
 
+        .add-button {
+            background-color: #0288D1;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            text-decoration: none;
+            transition: background-color 0.2s;
+        }
+
+        .add-button:hover {
+            background-color: #03A9F4;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 20px;
+            margin-left: 5px;
+            margin-right: 5px; 
             background-color: white;
         }
 
         table th {
-            background-color: #0288D1; /* Warna biru laut */
+            background-color: #0288D1;
             color: white;
             padding: 10px;
         }
@@ -154,7 +176,7 @@ $no = $mulai + 1;
         }
 
         table tr:nth-child(even) {
-            background-color: #E1F5FE; /* Warna biru muda */
+            background-color: #E1F5FE;
         }
 
         .action-buttons a {
@@ -175,20 +197,6 @@ $no = $mulai + 1;
 
         .action-buttons a:hover {
             opacity: 0.8;
-        }
-
-        .add-button {
-            display: inline-block;
-            background-color: #0288D1;
-            color: white;
-            padding: 10px 15px;
-            border-radius: 5px;
-            text-decoration: none;
-            margin-top: 20px;
-        }
-
-        .add-button:hover {
-            background-color: #03A9F4;
         }
 
         .pagination {
@@ -213,26 +221,12 @@ $no = $mulai + 1;
     </style>
 </head>
 <body>
-<div class="sidebar">
-    <h3>Menu</h3>
-    <ul>
-        <li><a href="dashboard.php">Dashboard</a></li>
-        <li><a href="data_buku.php">Data Buku</a></li>
-        <li><a href="data_siswa.php">Data Siswa</a></li>
-        <li><a href="data_peminjam.php">Data Peminjam</a></li>
-        <li><a href="riwayat.php">Riwayat</a></li>
-        <li><a href="kelola_pengguna.php">Kelola Pengguna</a></li>
-    </ul>
-</div>
 
-<div class="content">
+<!-- Top Bar -->
+<div class="top-bar">
     <h1>Data Buku</h1>
-
-    <?php if ($_SESSION['role'] == 'admin'): ?>
-        <a href="/edit & hapus/tambah_buku.php" class="add-button">Tambah Buku</a>
-    <?php endif; ?>
-
-    <div class="search-container">
+    <div class="actions">
+        <button class="menu-toggle" onclick="toggleMenu()">☰ Menu</button>
         <form method="GET" class="search-bar">
             <input type="text" name="search" placeholder="Cari judul atau penulis" value="<?= htmlspecialchars($search) ?>">
             <select name="kategori">
@@ -247,8 +241,16 @@ $no = $mulai + 1;
             </select>
             <button type="submit">Filter</button>
         </form>
+        <?php if ($_SESSION['role'] == 'admin'): ?>
+            <a href="/edit & hapus/tambah_buku.php" class="add-button">Tambah Buku</a>
+        <?php endif; ?>
     </div>
+</div>
 
+<!-- Sidebar -->
+<?php require '../includes/sidebar.php'; ?>
+
+<div class="content">
     <table>
         <thead>
             <tr>
@@ -259,6 +261,7 @@ $no = $mulai + 1;
                 <th>Tahun</th>
                 <th>Stok</th>
                 <?php if ($_SESSION['role'] == 'admin'): ?><th>Aksi</th><?php endif; ?>
+                <?php if ($_SESSION['role'] == 'siswa' || $_SESSION['role'] == 'guru'): ?><th>Aksi</th><?php endif; ?>
             </tr>
         </thead>
         <tbody>
@@ -273,7 +276,15 @@ $no = $mulai + 1;
                     <?php if ($_SESSION['role'] == 'admin'): ?>
                         <td class="action-buttons">
                             <a href="/edit & hapus/edit_buku.php?id=<?= $row['id']; ?>" class="edit">Edit</a>
-                            <a href="buku.php?hapus=<?= $row['id']; ?>" class="delete" onclick="return confirm('Hapus buku ini?')">Hapus</a>
+                            <a href="data_buku.php?hapus=<?= $row['id']; ?>" class="delete" onclick="return confirm('Hapus buku ini?')">Hapus</a>
+                        </td>
+                    <?php endif; ?>
+                    <?php if ($_SESSION['role'] == 'siswa' || $_SESSION['role'] == 'guru'): ?>
+                        <td>
+                            <form method="POST">
+                                <input type="hidden" name="id_buku" value="<?= $row['id']; ?>">
+                                <button type="submit" name="pinjam">Pinjam</button>
+                            </form>
                         </td>
                     <?php endif; ?>
                 </tr>
@@ -290,5 +301,13 @@ $no = $mulai + 1;
         <?php endfor; ?>
     </div>
 </div>
+
+<script>
+    function toggleMenu() {
+        const sidebar = document.querySelector('.sidebar');
+        sidebar.classList.toggle('hidden');
+    }
+</script>
+
 </body>
 </html>

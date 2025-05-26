@@ -2,9 +2,9 @@
 require '../includes/session.php'; 
 require '../includes/db.php'; 
 
-// Pencarian siswa
-$search = $_GET['search_siswa'] ?? '';
-$query = "SELECT * FROM users WHERE role='siswa' AND nama LIKE '%$search%'";
+// Pencarian pengguna
+$search = $_GET['search_pengguna'] ?? '';
+$query = "SELECT id, nama, kode, keterangan FROM users WHERE nama LIKE '%$search%' OR kode LIKE '%$search%' OR keterangan LIKE '%$search%'";
 $result = mysqli_query($conn, $query);
 ?>
 <!DOCTYPE html>
@@ -12,25 +12,37 @@ $result = mysqli_query($conn, $query);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Data Siswa</title>
+    <title>Data Pengguna</title>
     <style>
+        /* General Styles */
         body {
             margin: 0;
             font-family: Arial, sans-serif;
-            background-color: #E0F7FA; /* Latar belakang nuansa pantai */
+            background-color: #E0F7FA;
         }
 
+        header {
+            background-color: #0288D1;
+            color: white;
+            padding: 30px 20px; /* Tambahkan jarak lebih besar */
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 25px; /* Tambahkan margin bawah */
+        }
+
+        /* Sidebar Styles */
         .sidebar {
             position: fixed;
             top: 0;
             left: 0;
             width: 220px;
             height: 100%;
-            background-color: #0288D1; /* Warna biru laut */
+            background-color: #0288D1;
             color: white;
             padding: 20px;
             box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease;
+            z-index: 1000;
         }
 
         .sidebar.hidden {
@@ -64,54 +76,54 @@ $result = mysqli_query($conn, $query);
         }
 
         .sidebar ul li a:hover {
-            background-color: #03A9F4; /* Warna hover lebih terang */
+            background-color: #03A9F4;
         }
 
+        /* Menu Toggle Button */
         .menu-toggle {
-            position: fixed;
-            top: 20px;
-            left: 20px;
             background-color: #0288D1;
             color: white;
             border: none;
-            padding: 10px;
+            padding: 10px 15px;
             border-radius: 5px;
             cursor: pointer;
-            z-index: 1000;
+            transition: background-color 0.2s;
         }
 
         .menu-toggle:hover {
             background-color: #03A9F4;
         }
 
+        /* Content Styles */
         .content {
-            margin-left: 220px;
+            margin-left: 0;
             padding: 20px;
             background-color: #E0F7FA;
             min-height: 100vh;
-            transition: margin-left 0.3s ease;
-        }
-
-        .content.full {
-            margin-left: 0;
         }
 
         h1 {
             color: #01579B;
             font-size: 28px;
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 30px;
         }
 
-        .search-container {
-            text-align: center;
+        /* Top Bar Styles */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
             margin-bottom: 20px;
+            gap: 10px;
         }
 
         .search-bar {
-            display: inline-flex;
+            display: flex;
             align-items: center;
             gap: 10px;
+            flex-wrap: wrap;
         }
 
         .search-bar input {
@@ -135,6 +147,20 @@ $result = mysqli_query($conn, $query);
             background-color: #03A9F4;
         }
 
+        .add-button {
+            background-color: #0288D1;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            text-decoration: none;
+            transition: background-color 0.2s;
+        }
+
+        .add-button:hover {
+            background-color: #03A9F4;
+        }
+
+        /* Table Styles */
         table {
             width: 100%;
             border-collapse: collapse;
@@ -143,7 +169,7 @@ $result = mysqli_query($conn, $query);
         }
 
         table th {
-            background-color: #0288D1; /* Warna biru laut */
+            background-color: #0288D1;
             color: white;
             padding: 10px;
         }
@@ -154,9 +180,10 @@ $result = mysqli_query($conn, $query);
         }
 
         table tr:nth-child(even) {
-            background-color: #E1F5FE; /* Warna biru muda */
+            background-color: #E1F5FE;
         }
 
+        /* Action Buttons */
         .action-buttons a {
             text-decoration: none;
             padding: 5px 10px;
@@ -180,60 +207,23 @@ $result = mysqli_query($conn, $query);
         .action-buttons a:hover {
             opacity: 0.8;
         }
-
-        .add-button {
-            display: inline-block;
-            background-color: #0288D1;
-            color: white;
-            padding: 10px 15px;
-            border-radius: 5px;
-            text-decoration: none;
-            margin-top: 20px;
-        }
-
-        .add-button:hover {
-            background-color: #03A9F4;
-        }
-
-        @media (max-width: 768px) {
-            .content {
-                margin-left: 0;
-            }
-
-            .sidebar {
-                transform: translateX(-100%);
-            }
-
-            .sidebar.hidden {
-                transform: translateX(0);
-            }
-        }
     </style>
 </head>
 <body>
 
-<button class="menu-toggle" onclick="toggleMenu()">☰</button>
+<!-- Sidebar -->
+<?php require '../includes/sidebar.php'; ?>
 
-<div class="sidebar hidden">
-    <h3>Menu</h3>
-    <ul>
-        <li><a href="dashboard.php">Dashboard</a></li>
-        <li><a href="data_buku.php">Data Buku</a></li>
-        <li><a href="data_siswa.php">Data Siswa</a></li>
-        <li><a href="data_peminjam.php">Data Peminjam</a></li>
-        <li><a href="riwayat.php">Riwayat</a></li>
-        <li><a href="kelola_pengguna.php">Kelola Pengguna</a></li>
-    </ul>
-</div>
+<div class="content">
+    <h1>Data Pengguna</h1>
 
-<div class="content full">
-    <h1>Data Siswa</h1>
-
-    <div class="search-container">
+    <div class="top-bar">
+        <button class="menu-toggle" onclick="toggleMenu()">☰ Menu</button>
         <form method="GET" class="search-bar">
-            <input type="text" name="search_siswa" placeholder="Cari siswa..." value="<?= htmlspecialchars($search) ?>">
+            <input type="text" name="search_pengguna" placeholder="Cari pengguna..." value="<?= htmlspecialchars($search) ?>">
             <button type="submit">Cari</button>
         </form>
+        <a href="tambah_pengguna.php" class="add-button">Tambah Pengguna</a>
     </div>
 
     <table>
@@ -241,7 +231,8 @@ $result = mysqli_query($conn, $query);
             <tr>
                 <th>ID</th>
                 <th>Nama</th>
-                <th>Username</th>
+                <th>Kode</th>
+                <th>Keterangan</th>
                 <th>Aksi</th>
             </tr>
         </thead>
@@ -250,28 +241,24 @@ $result = mysqli_query($conn, $query);
                 <tr>
                     <td><?= $row['id'] ?></td>
                     <td><?= htmlspecialchars($row['nama']) ?></td>
-                    <td><?= htmlspecialchars($row['username']) ?></td>
+                    <td><?= htmlspecialchars($row['kode']) ?></td>
+                    <td><?= htmlspecialchars($row['keterangan']) ?></td>
                     <td class="action-buttons">
-                        <a href="edit_siswa.php?id=<?= $row['id'] ?>" class="edit">Edit</a>
-                        <a href="hapus_siswa.php?id=<?= $row['id'] ?>" class="delete" onclick="return confirm('Yakin ingin menghapus siswa ini?')">Hapus</a>
+                        <a href="edit_pengguna.php?id=<?= $row['id'] ?>" class="edit">Edit</a>
+                        <a href="hapus_pengguna.php?id=<?= $row['id'] ?>" class="delete" onclick="return confirm('Yakin ingin menghapus pengguna ini?')">Hapus</a>
                         <a href="riwayat_siswa.php?id=<?= $row['id'] ?>" class="riwayat">Riwayat</a>
                     </td>
                 </tr>
             <?php endwhile; ?>
         </tbody>
     </table>
-
-    <a href="tambah_siswa.php" class="add-button">Tambah Siswa</a>
 </div>
 
 <script>
     function toggleMenu() {
         const sidebar = document.querySelector('.sidebar');
-        const content = document.querySelector('.content');
         sidebar.classList.toggle('hidden');
-        content.classList.toggle('full');
     }
 </script>
-
 </body>
 </html>

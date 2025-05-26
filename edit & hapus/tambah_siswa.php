@@ -11,7 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $query = "INSERT INTO users (nama, username, password, role) VALUES ('$nama', '$username', '$password', '$role')";
     mysqli_query($conn, $query);
 
-    header("Location: data_siswa.php");
+    header("Location: data_pengguna.php");
     exit;
 }
 ?>
@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <input type="password" id="password" name="password" required><br><br>
 
         <button type="submit">Tambah</button>
-        <a href="data_siswa.php"><button type="button">Kembali</button></a>
+        <a href="data_pengguna.php"><button type="button">Kembali</button></a>
     </form>
 </body>
 </html>
